@@ -60,6 +60,10 @@ dlibModelDir = os.path.join(modelDir, 'dlib')
 openfaceModelDir = os.path.join(modelDir, 'openface')
 
 
+DEF_ALIGN = openface.AlignDlib(DLIB_MODEL)
+DEF_NET = openface.TorchNeuralNet(NN_MODEL, imgDim=IMG_DIM, cuda=CUDA)
+
+
 def getRep(bgrImg, align, net):
     start = time.time()
     if bgrImg is None:
@@ -236,10 +240,9 @@ def getRepFromString(imgstring):
 
 	print "imload took:", time.time()-st
 
-	align = openface.AlignDlib(DLIB_MODEL)
-	net = openface.TorchNeuralNet(NN_MODEL, imgDim=IMG_DIM, cuda=CUDA)
 	
-	vectors = getRep(img, align, net)
+	
+	vectors = getRep(img, DEF_ALIGN, DEF_NET)
 
 	print "grfs took:", time.time()-st
 	return vectors
