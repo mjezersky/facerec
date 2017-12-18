@@ -5,7 +5,10 @@ all:
 
 download:
 	mkdir -p $(MAINDIR)
-	cd $(MAINDIR) && wget https://raw.githubusercontent.com/mjezersky/facerec/master/deploy/sources.zip && unzip sources.zip
+	cd $(MAINDIR) && wget https://raw.githubusercontent.com/mjezersky/facerec/master/deploy/sources.zip
+	
+unzip:
+	cd $(MAINDIR) && unzip sources.zip
 	
 run:
 	cd $(MAINDIR) && python main.py
