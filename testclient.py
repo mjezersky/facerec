@@ -4,11 +4,11 @@ p = frp.FacerecProtocol()
 p.connect("10.0.75.2", 9000)
 
 
-f = open("D:\\skola\\DP - cam\\testfiles\\test1.jpg", "rb")
+f = open("D:\\skola\\DP - cam\\testfiles\\test5.jpg", "rb")
 data1 = f.read()
 f.close()
 
-f = open("D:\\skola\\DP - cam\\testfiles\\test2.jpg", "rb")
+f = open("D:\\skola\\DP - cam\\testfiles\\test6.jpg", "rb")
 data2 = f.read()
 f.close()
 
