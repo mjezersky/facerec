@@ -65,12 +65,12 @@ class FacerecProtocol():
         print "receiving", payloadSize
 
         data = ""
-        for i in range(int(payloadSize/self.chunksize)):
-            data += self.sock.recv(self.chunksize)
-            #print len(data), "/", payloadSize
-        #print "finalizing", len(data), payloadSize%self.chunksize, payloadSize
-        data += self.sock.recv(payloadSize%self.chunksize)
-        print "done"
+	recvd = 0
+	while recvd < payloadSize:
+		data += self.sock.recv(1)
+		recvd += 1        
+
+        print "done", len(data)
 
         return data
 

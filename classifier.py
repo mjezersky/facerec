@@ -238,6 +238,7 @@ def getRepFromString(imgstring):
 	
 	vectors = getRep(img, align, net)
 
+	return vectors
 
 
 def compareVectors(vec1, vec2):
