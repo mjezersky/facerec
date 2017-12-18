@@ -6,11 +6,12 @@ class FacerecProtocol():
         self.serversock = None
         self.sock = None
         self.clientAddr = None
+        self.chunksize = 512
         self.msgMaxLen = 10000000 # max 10MB payload
 
     def connect(self, host, port):
         addr = (host, port)
-        self.sock = socket(AF_INET, SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect(addr)
 
     def accept(self):
@@ -20,15 +21,26 @@ class FacerecProtocol():
 
     def bind(self, host, port):
         addr = (host, port)
-        self.serversock = socket(AF_INET, SOCK_STREAM)
+        self.serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversock.bind(addr)
 
     def listen(self, num):
         self.serversock.listen(num)
 
     def send(self, msg):
-        data = str(len(msg))+"#"+msg
+        msglen = len(msg)
+        data = str(msglen)+"#"
         self.sock.send(data)
+        print "sending", msglen
+
+        total = 0
+        for i in range(int(msglen/self.chunksize)+1):
+            currIndex = i*self.chunksize
+            data = msg[currIndex:currIndex+self.chunksize]
+            total += len(data)
+            self.sock.send( data )
+        print "sent", total
+            
 
     def recv(self):
         received = ""
@@ -39,6 +51,8 @@ class FacerecProtocol():
         while 1:
             counter += 1
             data = self.sock.recv(1)
+            if data == "":
+                return None
             if data == "#":
                 payloadSize = int(received)
                 break
@@ -47,7 +61,30 @@ class FacerecProtocol():
                 raise Exception("FacerecProtocol - size number length reached.")
 
         # recv payload
-        return self.sock.recv(payloadSize)
+
+        print "receiving", payloadSize
+
+        data = ""
+        for i in range(int(payloadSize/self.chunksize)):
+            data += self.sock.recv(self.chunksize)
+            #print len(data), "/", payloadSize
+        #print "finalizing", len(data), payloadSize%self.chunksize, payloadSize
+        data += self.sock.recv(payloadSize%self.chunksize)
+        print "done"
+
+        return data
+
+    def sendB64String(self, s):
+        self.send(s.encode("base64"))
+
+    def recvB64String(self):
+        return self.recv().decode("base64")
+
+    def sendfile(self, filename):
+        f = open(filename, "rb")
+        data = f.read()
+        f.close()
+        
 
     def close(self):
         try: self.sock.close()
@@ -55,4 +92,14 @@ class FacerecProtocol():
         if self.serversock != None:
             try: self.serversock.close()
             except: pass
-            
+
+
+
+if __name__ == "__main__":
+    x = FacerecProtocol()
+    x.connect("localhost", 2105)
+    f = open("test.jpg", "rb")
+    data = f.read()
+    f.close()
+    x.send(data)
+    x.close()
