@@ -1,4 +1,8 @@
 #!/usr/bin/env python2
+
+TESTIMG_A = "a.jpb"
+TESTIMG_B = "b.jpg"
+
 #
 # Example to run classifier on webcam stream.
 # Brandon Amos & Vijayenthiran
@@ -216,4 +220,9 @@ def webcamMain():
 
 
 if __name__ == "__main__":
-	print "test"
+	imgA = cv2.imread(TESTIMG_A)
+	imgB = cv2.imread(TESTIMG_B)
+	vectorsA = getRep(imgA)
+	vectorsB = getRep(imgB)
+	if len(vectorsA)>0 and len(vectorsB)>0:
+            print "Difference:", np.dot(vectorsA[0], vectorsB[0])
