@@ -89,9 +89,8 @@ class FacerecProtocol():
     def close(self):
         try: self.sock.close()
         except: pass
-        if self.serversock != None:
-            try: self.serversock.close()
-            except: pass
+        try: self.serversock.close()
+        except: pass
 
 
 

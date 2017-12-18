@@ -230,14 +230,18 @@ def webcamMain():
 
 
 def getRepFromString(imgstring):
+	st = time.time()
 	arr = np.fromstring(imgstring, np.uint8)
 	img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+	print "imload took:", time.time()-st
 
 	align = openface.AlignDlib(DLIB_MODEL)
 	net = openface.TorchNeuralNet(NN_MODEL, imgDim=IMG_DIM, cuda=CUDA)
 	
 	vectors = getRep(img, align, net)
 
+	print "grfs took:", time.time()-st
 	return vectors
 
 

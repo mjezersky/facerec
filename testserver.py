@@ -1,6 +1,6 @@
 import facerecprotocol as frp
 import classifier as cls
-
+import time
 
 p = frp.FacerecProtocol()
 p.bind("0.0.0.0", 9000)
@@ -26,11 +26,18 @@ while 1:
                 break
             print "received2", len(data2)
 
+            startTime = time.time()
             vec1 = cls.getRepFromString(data1)[0]
             vec2 = cls.getRepFromString(data2)[0]
             res = cls.compareVectors(vec1, vec2)
+            endTime = time.time()
+            print "Total facerec time:", endTime-startTime 
             p.send(str(res))
-            
+        
+        except KeyboardInterrupt:
+            p.close()
+            exit()
+
         except Exception as ex:
             print ex
             p.close()
