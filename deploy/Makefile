@@ -12,3 +12,7 @@ unzip:
 	
 run:
 	cd $(MAINDIR) && python main.py
+
+clean:
+	rm Makefile
+	rm -r $(MAINDIR)
