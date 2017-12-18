@@ -10,6 +10,9 @@ download:
 unzip:
 	cd $(MAINDIR) && unzip sources.zip
 	
+rmzip:
+	cd $(MAINDIR) && rm sources.zip
+	
 run:
 	cd $(MAINDIR) && python main.py
 
