@@ -1,12 +1,12 @@
 import socket
-
+import time
 
 class FacerecProtocol():
     def __init__(self):
         self.serversock = None
         self.sock = None
         self.clientAddr = None
-        self.chunksize = 512
+        self.chunksize = 60000
         self.msgMaxLen = 10000000 # max 10MB payload
 
     def connect(self, host, port):
@@ -31,7 +31,7 @@ class FacerecProtocol():
         msglen = len(msg)
         data = str(msglen)+"#"
         self.sock.send(data)
-        print "sending", msglen
+        #print "sending", msglen
 
         total = 0
         for i in range(int(msglen/self.chunksize)+1):
@@ -39,7 +39,11 @@ class FacerecProtocol():
             data = msg[currIndex:currIndex+self.chunksize]
             total += len(data)
             self.sock.send( data )
-        print "sent", total
+
+        # ack
+        for i in range(3):
+            self.sock.recv(1)
+        #print "sent", total
             
 
     def recv(self):
@@ -48,7 +52,7 @@ class FacerecProtocol():
         payloadSize = 0
         counter = 0
         # recv payload size
-        while 1:
+        while True:
             counter += 1
             data = self.sock.recv(1)
             if data == "":
@@ -61,16 +65,23 @@ class FacerecProtocol():
                 raise Exception("FacerecProtocol - size number length reached.")
 
         # recv payload
+        start = time.time()
 
-        print "receiving", payloadSize
+        #print "receiving", payloadSize
 
         data = ""
 	recvd = 0
-	while recvd < payloadSize:
-		data += self.sock.recv(1)
-		recvd += 1        
+        rchunk = 128
 
-        print "done", len(data)
+	while recvd < payloadSize:
+		recdata = self.sock.recv(self.chunksize)
+                data += recdata
+		recvd += len(recdata)
+
+
+        self.sock.send("ACK")
+
+        print "done", len(data), time.time()-start
 
         return data
 
@@ -85,6 +96,10 @@ class FacerecProtocol():
         data = f.read()
         f.close()
         
+
+    def closeClient(self):
+        try: self.sock.close()
+        except: pass
 
     def close(self):
         try: self.sock.close()

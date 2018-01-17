@@ -1,6 +1,7 @@
 # actual DB not yet implemented, using local files instead
 
 import pickle
+import numpy as np
 from lshash import lshash
 
 
@@ -14,19 +15,29 @@ def loadVectors(fname):
     f.close()
     return vecs
 
-def saveVectors(fname, vectors):
+def saveVectors(vectors, fname):
     f = open(fname, "wb")
-    pickle.dump(f, vectors)
+    pickle.dump(vectors, f)
     f.close()
 
-def buildHashTable(vectors):
-    hashTable = LSHash(16, 124)
+def buildHashTable(vectors, dim):
+    print("Creating HT with", len(vectors), "elements.")
+    hashTable = lshash.LSHash(len(vectors), dim)
     for vec in vectors:
-        hashTable.index(vec)
+        hashTable.index(vectors[vec])
     return hashTable
+
+def getLabel(vec, vectors):
+    for label in vectors:
+        if np.array_equal(vectors[label], vec):
+            return label
+    return None
 
 def query(inVector, vectors, hashTable):
     tQuery = hashTable.query(inVector)
     # get most probable
-    mostProbable = tQuery[0]
-    return vectors[mostProbable]   
+    # print(tQuery)
+    if len(tQuery)==0:
+        return "UNKNOWN#0"
+    mostProbable = tQuery[0][0]
+    return getLabel(mostProbable, vectors)+"#"+str(tQuery[0][1])
