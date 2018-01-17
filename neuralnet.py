@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 import sys
+import dlib
 
 
 DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
@@ -35,10 +36,10 @@ DEF_NET = openface.TorchNeuralNet(NN_MODEL, imgDim=IMG_DIM, cuda=CUDA)
 
 
 def scaleRect(rect, factor):
-    r_l = rect.left()*factor
-    r_t = rect.top()*factor
-    r_r = rect.right()*factor
-    r_b = rect.bottom()*factor
+    r_l = int(rect.left()*factor)
+    r_t = int(rect.top()*factor)
+    r_r = int(rect.right()*factor)
+    r_b = int(rect.bottom()*factor)
     return dlib.rectangle(r_l,r_t,r_r,r_b)
 
 
@@ -50,7 +51,7 @@ def scaleRects(rects, factor):
 
 
 def getRep(bgrImg, align, net):
-    scaleDown = False
+    scaleDown = True
     start = time.time()
     if bgrImg is None:
         raise Exception("Unable to load image/frame")
@@ -67,9 +68,14 @@ def getRep(bgrImg, align, net):
     # optimizer
 
     if scaleDown:
-        bbImg = cv2.resize(image, (0,0), fx=0.5, fy=0.5) 
-        bb = align.getAllFaceBoundingBoxes(bbImg)
-        bb = scaleRects(bb, 2)
+        try:
+            scaleFactor = 0.5
+            bbImg = cv2.resize(rgbImg, None, fx=scaleFactor, fy=scaleFactor) 
+            bb = align.getAllFaceBoundingBoxes(bbImg)
+            bb = scaleRects(bb, 1.0/scaleFactor)
+            print "BBLEN", len(bb)
+        except Exception as ex:
+            print ex
     else:
         bb = align.getAllFaceBoundingBoxes(rgbImg)
 
