@@ -42,6 +42,17 @@ def scaleRect(rect, factor):
     r_b = int(rect.bottom()*factor)
     return dlib.rectangle(r_l,r_t,r_r,r_b)
 
+def bbToArray(bb):
+    outArr = []
+    for box in bb:
+        boxArr=[]
+        boxArr.append(box.left())
+        boxArr.append(box.top())
+        boxArr.append(box.right())
+        boxArr.append(box.bottom())
+        outArr.append(boxArr)
+    return outArr 
+
 
 def scaleRects(rects, factor):
     res = dlib.rectangles()
@@ -108,12 +119,11 @@ def getRep(bgrImg, align, net):
     for alignedFace in alignedFaces:
         reps.append(net.forward(alignedFace))
 
-    if True:
-        print("Neural network forward pass took {} seconds.".format(
-            time.time() - start))
+    print("Neural network forward pass took {} seconds.".format(time.time() - start))
 
     # print (reps)
-    return reps
+    arrayBoxes = bbToArray(bb)
+    return reps, arrayBoxes
 
 
 
