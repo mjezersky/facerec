@@ -34,6 +34,9 @@ def wipedb():
     dbh.saveVectors(vectors, "filedb.p")
 
 
+def dumpdb():
+    return str(vectors.keys())
+
 def storevec(vec, label):
     global vectors
     vectors[label] = vec
@@ -71,8 +74,13 @@ while 1:
 
             if command == "WIPEDB":
                 wipedb()
+                continue
+            elif command == "DUMPDB":
+                p.send(dumpdb())
+                continue
             elif command == "RETRAIN":
                 retrain()
+                continue
             elif command == "STORE":
                 label = p.recv()
                 p.send("ACK")
@@ -86,15 +94,18 @@ while 1:
 
             startTime = time.time()
             try:
-                vec1 = nnet.getRepFromString(data1)[0]
-                res = vec1
+                allvecs, boxes = nnet.getRepFromString(data1)
+                vec0 = allvecs[0]
+                boxStr = str(boxes[0])+"$"
+                res = vec0
             except Exception as err:
                 res = None
+                boxStr = ""
             endTime = time.time()
             print "Total facerec time:", endTime-startTime
 
             if command == "RECOG":
-                p.send(recog(res, vectors, htab))
+                p.send(boxStr+recog(res, vectors, htab))
             elif command == "STORE":
                 storevec(res, label)
                 p.send("Stored "+label)
