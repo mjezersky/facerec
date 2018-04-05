@@ -11,7 +11,7 @@ import threading
 
 
 IDENTIFIER = "default"
-MQ_SERVER_IP = "10.0.0.1"
+MQ_SERVER_IP = "192.168.0.101"
 MQ_CREDENTIALS = pika.PlainCredentials('facerec', 'facerec')
 
 
@@ -25,7 +25,7 @@ class MQServer():
             self.vectors = dbh.loadVectors("filedb.p")
         except:
             self.vectors = {}
-        print(vectors.keys())
+        print(self.vectors.keys())
         self.smodel = svm.trainNewModel(self.vectors)
 
 
@@ -38,7 +38,7 @@ class MQServer():
     def recog(self, vec):
         if vec is None:
             return "NO_FACE_DETECTED"
-        preds = svm.predict(vec,smodel)
+        preds = svm.predict(vec,self.smodel)
         pred = str(self.vectors.keys()[np.argmax(preds)])
         return pred + "," + str(np.argmax(preds)) + "," + serializeArray(vec)
 
@@ -157,6 +157,10 @@ class MQServer():
         mq_recieve_thread.start()
 
 
-s = MQServer()
-s.run()
-
+while 1:
+    try:
+        s = MQServer()
+        s.run()
+    except KeyboardInterrupt:
+        print "\nClosing"
+        break
