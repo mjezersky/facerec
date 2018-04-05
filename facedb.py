@@ -52,7 +52,7 @@ class FaceDB():
     def calcBestMatch(self, name, vector):
         best = 100
         for vec2 in self.faces[name]:
-            dist = np.dot(vector, vec2) # DEBUG dist = distance(vec2, vector)
+            dist = np.linalg.norm(vector-vec2) # DEBUG dist = distance(vec2, vector)
             if dist < best:
                 best = dist
         return best
