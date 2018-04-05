@@ -4,8 +4,8 @@ import numpy as np
 
 
 def trainNewModel(features):
-    X = np.array( features ).reshape(-1,128)
-    y = np.array( range(0,len(features)) ).reshape(-1,)
+    X = np.array( features*2 ).reshape(-1,128)
+    y = np.array( range(0,len(features))*2 ).reshape(-1,)
 
     print np.shape(X), np.shape(y)
     param_grid = [

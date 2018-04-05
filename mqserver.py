@@ -106,8 +106,9 @@ class MQServer():
     def deserializeDB(self, string):
         print "DB deserialize"
         self.fdb.deserialize(string)
-        self.fdb.save(FACE_DB_FILE)
+        self.fdb.store(FACE_DB_FILE)
         self.vectors = self.fdb.getVectors()
+        self.retrain()
 
     def mainServiceCallback(self, ch, method, properties, body):
         print "got", len(body), "bytes"
