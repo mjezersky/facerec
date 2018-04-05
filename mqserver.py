@@ -11,18 +11,24 @@ import threading
 
 
 IDENTIFIER = "default"
-MQ_SERVER_IP = "192.168.1.8"
+MQ_SERVER_IP = "10.0.0.1"
 MQ_CREDENTIALS = pika.PlainCredentials('facerec', 'facerec')
+
+currFrame = "0"
+
+def serializeArray(arr):
+    return "#".join( map(lambda x: str(x), arr) )
 
 def recog(vec, vectors, hashTable):
     if vec is None:
         return "NO_FACE_DETECTED"
     preds = svm.predict(vec,smodel)
     pred = str(vectors.keys()[np.argmax(preds)])
-    return pred+"/"+dbh.query(vec, vectors, hashTable)+"("+str(preds)+")"
-    vectors["M"] = vec
-    dbh.saveVectors(vectors, "filedb.p")
-    return(str(len(vec)))
+    return pred + "," + str(np.argmax(preds)) + "," + serializeArray(vec)
+    #return pred+"/"+dbh.query(vec, vectors, hashTable)+"("+str(preds)+")"
+    #vectors["M"] = vec
+    #dbh.saveVectors(vectors, "filedb.p")
+    #return(str(len(vec)))
 
 
 def retrain():
@@ -63,9 +69,29 @@ htab = dbh.buildHashTable(vectors, 128)
 smodel = svm.trainNewModel(vectors)
 
 
+def splitFrame(framestr):
+    separatorIndex = -1
+    maxlen = 20
+    if len(framestr)<maxlen:
+        print "TOO SMALL"
+        return ("0", "") 
+    for i in range(maxlen):
+        if framestr[i] == ",":
+            separatorIndex = i
+            break
+    
+    if separatorIndex == -1:
+        print "Warning: invalid frame."
+        return ("0", "")
 
-def getResult(imgstring):
+    print "OK --------"
+
+    return (framestr[0:separatorIndex], framestr[separatorIndex+1:])
+
+def getResults(imgstring):
     startTime = time.time()
+    allvecs = []
+    boxes = []
     try:
         allvecs, boxes = nnet.getRepFromString(imgstring)
         vec0 = allvecs[0]
@@ -77,20 +103,47 @@ def getResult(imgstring):
     endTime = time.time()
     print "Total facerec time:", endTime-startTime
 
-    return boxStr+recog(res, vectors, htab)
+    results = []
+    for i in range(0, len(boxes)):
+    	resStr = serializeArray(boxes[i]) + "," + recog(allvecs[i], vectors, htab)
+        results.append(resStr)
+    
+    return results
 
+def deserializeDB():
+    print "DB deserialize"
 
 def mainServiceCallback(ch, method, properties, body):
+    global currFrame
     print "got", len(body), "bytes"
+    frameNum, data = splitFrame(body)
+    currFrame = frameNum
+    results = getResults(data)
+    if len(results)==0:
+        results = [ "none,none,0,none" ]
+    print frameNum
+    if frameNum == "-1":
+        responseType = "2" #DB recognition request
+        print "DB frame request"
+    else:
+        responseType = "1"
+    msg = responseType + ";" + IDENTIFIER + ";" + str(currFrame) + ";" + ";".join(results)
+    print "Publishing"
     ch.basic_publish(exchange='',
-                      routing_key='feedback',
-                      body="1,"+IDENTIFIER+",0,none,0,"+getResult(body))
+                          routing_key='feedback',
+                          body=msg)
 
-def discoveryCallback(ch, method, properties, body):
+def broadcastCallback(ch, method, properties, body):
    print "got", len(body), "bytes"
-   ch.basic_publish(exchange='',
-                      routing_key='feedback',
-                      body="0,"+IDENTIFIER)
+   if len(body)<=1:
+       return
+   if body[0]=="0":
+       print "Announcing 0"
+       ch.basic_publish(exchange='',
+                          routing_key='feedback',
+                          body="0,"+IDENTIFIER)
+   elif body[0]=="1":
+       deserializeDB(body[1:])
 
 
 def mainServiceInit():
@@ -106,7 +159,7 @@ def mainServiceInit():
 
     channel.start_consuming()
 
-def discoveryInit():
+def broadcastInit():
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=MQ_SERVER_IP, credentials=MQ_CREDENTIALS))
     channel = connection.channel()
 
@@ -117,7 +170,7 @@ def discoveryInit():
 
     channel.queue_bind(exchange="broadcast", queue=queue_name)
 
-    channel.basic_consume(discoveryCallback,
+    channel.basic_consume(broadcastCallback,
                       queue=queue_name,
                       no_ack=True)
 
@@ -126,7 +179,7 @@ def discoveryInit():
     mq_recieve_thread.start()
 
 
-discoveryInit()
+broadcastInit()
 mainServiceInit()
 
 while 0:
