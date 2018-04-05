@@ -47,7 +47,7 @@ class FaceDB():
     def distToConf(self, dist):
         if dist>1.2:
             return 0
-        return 1.0 - int((dist/1.2))
+        return 1.0 - (dist/1.2)
 
     def calcBestMatch(self, name, vector):
         best = 100
