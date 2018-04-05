@@ -61,13 +61,13 @@ class FaceDB():
         return self.distToConf(self.calcBestMatch(name, vector))
 
     def deserializeVector(self, string):
-        return map(lambda x: float(x), string.split(","))
+        return map(lambda x: float(x), string.split("#"))
 
     def deserialize(self, string):
         self.faces = {}
         elements = string.split("\n")
         for e in elements:
-            data = e.split("#")
+            data = e.split(",")
             self.add(data[0], self.deserializeVector(data[1]))
         self.createVectorsAndLabels()
         
