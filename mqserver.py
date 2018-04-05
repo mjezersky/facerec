@@ -40,9 +40,21 @@ class MQServer():
     def recog(self, vec):
         if vec is None:
             return "NO_FACE_DETECTED"
-        preds = svm.predict(vec,self.smodel)
-        pred = str(self.fdb.getName(np.argmax(preds)))
-        return pred + "," + self.fdb.getConfidence(pred, vec) + "," + serializeArray(vec)
+
+        if self.smodel is None:
+            pred = "unknown"
+            confidence = 0.0
+        else:
+            preds = svm.predict(vec,self.smodel)
+            pred = str(self.fdb.getName(np.argmax(preds)))
+            
+            confidence = self.fdb.getConfidence(pred, vec)
+            if confidence < 0.5:
+                # reverse confidence for unknown
+                pred = "unknown"
+                confidence = 1-confidence
+            
+        return pred + "," + str(confidence) + "," + serializeArray(vec)
 
 
     def retrain(self):

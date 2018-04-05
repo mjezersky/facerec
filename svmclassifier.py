@@ -17,8 +17,12 @@ def trainNewModel(features):
         ]
     clf = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=2)
     #clf = SVC(probability=True)
-    clf.fit(X,y)
-    return clf
+    try:
+        clf.fit(X,y)
+        return clf
+    except Exception as ex:
+        print ex
+        return None
 
 def predict(vec, model):
     return model.predict_proba(vec)
