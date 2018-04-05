@@ -67,6 +67,8 @@ class FaceDB():
         self.faces = {}
         elements = string.split("\n")
         for e in elements:
+            if e=="":
+                continue
             data = e.split(",")
             self.add(data[0], self.deserializeVector(data[1]))
         self.createVectorsAndLabels()
