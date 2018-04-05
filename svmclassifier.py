@@ -3,9 +3,9 @@ from sklearn.grid_search import GridSearchCV
 import numpy as np
 
 
-def trainNewModel(vectors):
-    X = np.array( vectors.values()*2 ).reshape(-1,128)
-    y = np.array( range(0,len(vectors))*2 ).reshape(-1,)
+def trainNewModel(features):
+    X = np.array( features ).reshape(-1,128)
+    y = np.array( range(0,len(features)) ).reshape(-1,)
 
     print np.shape(X), np.shape(y)
     param_grid = [

@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
-import facerecprotocol as frp
-import dbhandler as dbh
+import facedb
 import svmclassifier as svm
 import neuralnet as nnet
 import time
@@ -13,6 +12,7 @@ import threading
 IDENTIFIER = "default"
 MQ_SERVER_IP = "192.168.0.101"
 MQ_CREDENTIALS = pika.PlainCredentials('facerec', 'facerec')
+FACE_DB_FILE = "dbfile.p"
 
 
 def serializeArray(arr):
@@ -21,11 +21,13 @@ def serializeArray(arr):
 class MQServer():
     def __init__(self):
         self.currFrame = 0
+        self.fdb = facedb.FaceDB()
         try:
-            self.vectors = dbh.loadVectors("filedb.p")
+            self.fdb.load(FACE_DB_FILE)
+            self.vectors = self.fdb.getVectors()
         except:
-            self.vectors = {}
-        print(self.vectors.keys())
+            self.vectors = []
+        print(self.fdb.labels)
         self.smodel = svm.trainNewModel(self.vectors)
 
 
@@ -39,8 +41,8 @@ class MQServer():
         if vec is None:
             return "NO_FACE_DETECTED"
         preds = svm.predict(vec,self.smodel)
-        pred = str(self.vectors.keys()[np.argmax(preds)])
-        return pred + "," + str(np.argmax(preds)) + "," + serializeArray(vec)
+        pred = str(self.fdb.getName(np.argmax(preds)))
+        return pred + "," + self.fdb.getConfidence(pred, vec) + "," + serializeArray(vec)
 
 
     def retrain(self):
@@ -89,8 +91,11 @@ class MQServer():
         
         return results
 
-    def deserializeDB(self):
+    def deserializeDB(self, string):
         print "DB deserialize"
+        self.fdb.deserialize(string)
+        self.fdb.save(FACE_DB_FILE)
+        self.vectors = self.fdb.getVectors()
 
     def mainServiceCallback(self, ch, method, properties, body):
         print "got", len(body), "bytes"
