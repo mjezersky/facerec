@@ -13,7 +13,7 @@ IDENTIFIER = "default"
 MQ_SERVER_IP = "192.168.0.101"
 MQ_CREDENTIALS = pika.PlainCredentials('facerec', 'facerec')
 FACE_DB_FILE = "dbfile.p"
-RECOG_THRESHOLD = 0.5
+RECOG_THRESHOLD = 0.25
 
 
 def serializeArray(arr):
@@ -53,7 +53,7 @@ class MQServer():
             if confidence < RECOG_THRESHOLD:
                 # reverse confidence for unknown
                 pred = "unknown"
-                confidence = 1-confidence
+                #confidence = 1-confidence
             
         return pred + "," + str(confidence) + "," + serializeArray(vec)
 

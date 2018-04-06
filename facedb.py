@@ -53,6 +53,7 @@ class FaceDB():
         best = 100
         for vec2 in self.faces[name]:
             dist = np.linalg.norm(vector-vec2) # DEBUG dist = distance(vec2, vector)
+            print "dist:" + str(dist)
             if dist < best:
                 best = dist
         return best
