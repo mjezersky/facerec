@@ -102,7 +102,7 @@ def getRep(bgrImg, align, net, tracker):
 
     try:
         if TRACKING_ENABLED:
-            tracker.feed(bb)
+            tracker.feed(bb, rgbImg)
             bb += tracker.getRectangles()
     except Exception as err:
         print err
