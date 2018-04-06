@@ -58,6 +58,7 @@ class Tracking():
 
 
     def updateTrackers(self, rectangles, image):
+        print "--upda"
         self.lastImage = image
         self.lastFrameRectangles = rectangles
         self.trackedRectangles = []
@@ -71,12 +72,14 @@ class Tracking():
             
 
     def feed(self, rectangles, image):
+        print "--fi"
         # first image
         if self.lastImage == None:
             self.lastImage = image
             self.lastFrameRectangles = rectangles
             return
-        
+
+        print "--rec"
         # search whether box is already tracked
         for rec in rectangles:
             for tr in self.trackers:
@@ -86,6 +89,7 @@ class Tracking():
                     self.updateTrackers(rectangles, image)
                     return
 
+        print "--lost"
         # not tracked yet, compare last two frames for lost boxes
         lost = []
         for recA in self.lastFrameRectangles:
@@ -98,6 +102,7 @@ class Tracking():
                 # box was lost between last two frames, assign for tracking
                 lost.append(recA)
 
+        print "--tra"
         # begin tracking all lost boxes
         for rec in lost:
             tr = Tracker(rec, self.dlibTrackerCreator())
