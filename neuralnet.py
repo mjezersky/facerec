@@ -2,19 +2,7 @@
 
 import sys
 import dlib
-
-
-DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
-NN_MODEL = "models/openface/nn4.small2.v1.t7"
-
-IMG_DIM = 96
-
-CUDA = False
-
-import time
-
-start = time.time()
-
+import tracking
 import argparse
 import cv2
 import os
@@ -23,6 +11,19 @@ import pickle
 import numpy as np
 from sklearn.mixture import GMM
 import openface
+import time
+
+
+DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
+NN_MODEL = "models/openface/nn4.small2.v1.t7"
+TRACKING_ENABLED = True
+IMG_DIM = 96
+
+CUDA = False
+
+start = time.time()
+
+
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
 modelDir = os.path.join(fileDir, '..', 'models')
@@ -32,6 +33,7 @@ openfaceModelDir = os.path.join(modelDir, 'openface')
 
 DEF_ALIGN = openface.AlignDlib(DLIB_MODEL)
 DEF_NET = openface.TorchNeuralNet(NN_MODEL, imgDim=IMG_DIM, cuda=CUDA)
+TRACKER = tracking.Tracking(dlib.correlation_tracker)
 
 
 
@@ -61,7 +63,7 @@ def scaleRects(rects, factor):
     return res
 
 
-def getRep(bgrImg, align, net):
+def getRep(bgrImg, align, net, tracker):
     scaleDown = True
     start = time.time()
     if bgrImg is None:
@@ -80,7 +82,7 @@ def getRep(bgrImg, align, net):
 
     if scaleDown:
         try:
-            scaleFactor = 0.5
+            scaleFactor = 0.75
             bbImg = cv2.resize(rgbImg, None, fx=scaleFactor, fy=scaleFactor) 
             bb = align.getAllFaceBoundingBoxes(bbImg)
             bb = scaleRects(bb, 1.0/scaleFactor)
@@ -96,6 +98,11 @@ def getRep(bgrImg, align, net):
     
     print("bb", bb)
     print("Face detection took {} seconds.".format(time.time() - start))
+    start = time.time()
+
+    if TRACKING_ENABLED:
+        tracker.feed(bb)
+        bb += tracker.getRectangles()
 
     start = time.time()
 
@@ -137,7 +144,7 @@ def getRepFromString(imgstring):
 
 	
 	
-	vectors = getRep(img, DEF_ALIGN, DEF_NET)
+	vectors = getRep(img, DEF_ALIGN, DEF_NET, TRACKER)
 
 	print "grfs took:", time.time()-st
 	return vectors

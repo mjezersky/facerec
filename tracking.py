@@ -42,8 +42,13 @@ class Tracking():
         self.trackedRectangles = []
         
         self.threshold = 0.50
-        self.trackerThreshold = 0.50   
+        self.trackerThreshold = 0.50
 
+    def reset(self):
+        self.lastFrameRectangles = []
+        self.lastImage = None
+        self.trackers = []
+        self.trackedRectangles = []
 
     def remove(self, tracker):
         self.trackers.remove(tracker)
