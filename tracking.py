@@ -4,8 +4,10 @@ def recArea(rectangle):
     return (rectangle.right - rectangle.left)*(rectangle.bottom - rectangle.top)
 
 def recRatio(recA, recB):
+    print "--ratio"
     intersection = max(0, min(recA.right, recB.right) - max(recA.left, recB.left)) * max(0, min(recA.bottom, recB.bottom) - max(recA.top, recB.top));
-    union = area(recA) + area(recB) - intersection;
+    print "--union"
+    union = recArea(recA) + recArea(recB) - intersection;
     return (float(intersection)/float(union))
 
 def recSimilar(recA, recB, threshold):
