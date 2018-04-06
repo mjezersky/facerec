@@ -100,9 +100,12 @@ def getRep(bgrImg, align, net, tracker):
     print("Face detection took {} seconds.".format(time.time() - start))
     start = time.time()
 
-    if TRACKING_ENABLED:
-        tracker.feed(bb)
-        bb += tracker.getRectangles()
+    try:
+        if TRACKING_ENABLED:
+            tracker.feed(bb)
+            bb += tracker.getRectangles()
+    except Exception as err:
+        print err
 
     start = time.time()
 
