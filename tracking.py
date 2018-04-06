@@ -6,6 +6,7 @@ def recArea(rectangle):
 def recRatio(recA, recB):
     print "--ratio"
     intersection = max(0, min(recA.right, recB.right) - max(recA.left, recB.left)) * max(0, min(recA.bottom, recB.bottom) - max(recA.top, recB.top));
+    intersection = float(intersection)
     print "--union"
     union = recArea(recA) + recArea(recB) - intersection;
     return (float(intersection)/float(union))

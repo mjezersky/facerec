@@ -16,7 +16,7 @@ import time
 
 DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
 NN_MODEL = "models/openface/nn4.small2.v1.t7"
-TRACKING_ENABLED = True
+TRACKING_ENABLED = False
 IMG_DIM = 96
 
 CUDA = False
