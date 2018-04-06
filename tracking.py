@@ -72,7 +72,7 @@ class Tracking():
 
     def feed(self, rectangles, image):
         # first image
-        if lastImage == None:
+        if self.lastImage == None:
             self.lastImage = image
             self.lastFrameRectangles = rectangles
             return
