@@ -74,7 +74,7 @@ class Tracking():
     def feed(self, rectangles, image):
         print "--fi"
         # first image
-        if self.lastImage == None:
+        if self.lastImage is None:
             self.lastImage = image
             self.lastFrameRectangles = rectangles
             return
