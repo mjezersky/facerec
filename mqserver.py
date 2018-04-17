@@ -10,7 +10,7 @@ import threading
 
 
 IDENTIFIER = "default"
-MQ_SERVER_IP = "192.168.0.101"
+MQ_SERVER_IP = "192.168.0.130"
 MQ_CREDENTIALS = pika.PlainCredentials('facerec', 'facerec')
 FACE_DB_FILE = "dbfile.p"
 RECOG_THRESHOLD = 0.25
@@ -30,6 +30,7 @@ class MQServer():
             self.vectors = []
         print(self.fdb.labels)
         self.smodel = svm.trainNewModel(self.vectors)
+        self.detectorSkip = 2
 
 
     def run(self):
@@ -86,14 +87,12 @@ class MQServer():
         startTime = time.time()
         allvecs = []
         boxes = []
-        try:
-            allvecs, boxes = nnet.getRepFromString(imgstring)
-            vec0 = allvecs[0]
-            boxStr = str(boxes[0])+"$"
-            res = vec0
-        except Exception as err:
-            res = None
-            boxStr = ""
+        currFrameNum = int(self.currFrame)
+        if currFrameNum>=1 and currFrameNum%self.detectorSkip!=0:
+            skipDetection = True
+        else:
+            skipDetection = False
+        allvecs, boxes = nnet.getRepFromString(imgstring, skipDetection)
         endTime = time.time()
         print "Total facerec time:", endTime-startTime
 

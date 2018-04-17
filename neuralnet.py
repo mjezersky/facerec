@@ -16,8 +16,9 @@ import time
 
 DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
 NN_MODEL = "models/openface/nn4.small2.v1.t7"
-TRACKING_ENABLED = False
+TRACKING_ENABLED = True
 IMG_DIM = 96
+SCALE_DOWN = True # !! todo dynamic scaling
 
 CUDA = False
 
@@ -63,8 +64,7 @@ def scaleRects(rects, factor):
     return res
 
 
-def getRep(bgrImg, align, net, tracker):
-    scaleDown = True
+def getRep(bgrImg, align, net, tracker, skipDetection):
     start = time.time()
     if bgrImg is None:
         raise Exception("Unable to load image/frame")
@@ -80,32 +80,39 @@ def getRep(bgrImg, align, net, tracker):
     # Get all bounding boxes
     # optimizer
 
-    if scaleDown:
+    if SCALE_DOWN and not skipDetection:
         try:
-            scaleFactor = 0.75
+            scaleFactor = 0.6
             bbImg = cv2.resize(rgbImg, None, fx=scaleFactor, fy=scaleFactor) 
             bb = align.getAllFaceBoundingBoxes(bbImg)
             bb = scaleRects(bb, 1.0/scaleFactor)
             print "BBLEN", len(bb)
         except Exception as ex:
             print ex
-    else:
+    elif not skipDetection:
         bb = align.getAllFaceBoundingBoxes(rgbImg)
 
-    if bb is None:
-        # raise Exception("Unable to find a face: {}".format(imgPath))
-        return None
+    	if bb is None:
+            bb = dlib.rectangles()
+    else:
+        bb = dlib.rectangles()
     
     print("bb", bb)
     print("Face detection took {} seconds.".format(time.time() - start))
     start = time.time()
 
     try:
-        if TRACKING_ENABLED:
+        if not (tracker is None):
             tracker.feed(bb, rgbImg)
-            bb += tracker.getRectangles()
-    except Exception as err:
-        print err
+            trrec = tracker.getRectangles()
+            newbb = dlib.rectangles()
+            for r in bb:
+                newbb.append(r)
+            for r in trrec:
+                dlr = dlib.rectangle(long(r.left()), long(r.top()), long(r.right()), long(r.bottom()))
+                newbb.append(dlr)
+    except KeyboardInterrupt as err:
+        return None
 
     start = time.time()
 
@@ -138,7 +145,7 @@ def getRep(bgrImg, align, net, tracker):
 
 
 
-def getRepFromString(imgstring):
+def getRepFromString(imgstring, skipDetection):
 	st = time.time()
 	arr = np.fromstring(imgstring, np.uint8)
 	img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
@@ -147,7 +154,7 @@ def getRepFromString(imgstring):
 
 	
 	
-	vectors = getRep(img, DEF_ALIGN, DEF_NET, TRACKER)
+	vectors = getRep(img, DEF_ALIGN, DEF_NET, TRACKER, skipDetection)
 
 	print "grfs took:", time.time()-st
 	return vectors
