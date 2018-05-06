@@ -10,10 +10,11 @@ import threading
 
 
 IDENTIFIER = "default"
-MQ_SERVER_IP = "192.168.0.130"
+MQ_SERVER_IP = "192.168.1.3"
 MQ_CREDENTIALS = pika.PlainCredentials('facerec', 'facerec')
 FACE_DB_FILE = "dbfile.p"
 RECOG_THRESHOLD = 0.25
+WORKER_GROUP_NAME = "default"
 
 
 def serializeArray(arr):
@@ -126,7 +127,7 @@ class MQServer():
         msg = responseType + ";" + IDENTIFIER + ";" + str(self.currFrame) + ";" + ";".join(results)
         print "Publishing"
         ch.basic_publish(exchange='',
-                              routing_key='feedback',
+                              routing_key='feedback-'+WORKER_GROUP_NAME,
                               body=msg)
 
     def broadcastCallback(self, ch, method, properties, body):
@@ -136,7 +137,7 @@ class MQServer():
        if body[0]=="0":
            print "Announcing 0"
            ch.basic_publish(exchange='',
-                              routing_key='feedback',
+                              routing_key='feedback-'+WORKER_GROUP_NAME,
                               body="0,"+IDENTIFIER)
        elif body[0]=="1":
            self.deserializeDB(body[1:])
@@ -147,7 +148,7 @@ class MQServer():
         channel = connection.channel()
 
         channel.queue_declare(queue=IDENTIFIER)
-        channel.queue_declare(queue="feedback")
+        channel.queue_declare(queue="feedback-"+WORKER_GROUP_NAME)
 
         channel.basic_consume(self.mainServiceCallback,
                           queue=IDENTIFIER,
@@ -159,12 +160,12 @@ class MQServer():
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=MQ_SERVER_IP, credentials=MQ_CREDENTIALS))
         channel = connection.channel()
 
-        channel.exchange_declare(exchange='broadcast', exchange_type='fanout')
-        channel.queue_declare(queue="feedback")
+        channel.exchange_declare(exchange='broadcast-'+WORKER_GROUP_NAME, exchange_type='fanout')
+        channel.queue_declare(queue="feedback-"+WORKER_GROUP_NAME)
         result = channel.queue_declare(exclusive=True)
         queue_name = result.method.queue
 
-        channel.queue_bind(exchange="broadcast", queue=queue_name)
+        channel.queue_bind(exchange="broadcast-"+WORKER_GROUP_NAME, queue=queue_name)
 
         channel.basic_consume(self.broadcastCallback,
                           queue=queue_name,
@@ -175,10 +176,11 @@ class MQServer():
         mq_recieve_thread.start()
 
 
-while 1:
-    try:
-        s = MQServer()
-        s.run()
-    except KeyboardInterrupt:
-        print "\nClosing"
-        break
+def run():
+    while 1:
+        try:
+            s = MQServer()
+            s.run()
+        except KeyboardInterrupt:
+            print "\nClosing"
+            break
