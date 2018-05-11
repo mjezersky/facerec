@@ -4,10 +4,10 @@ def recArea(rectangle):
     return (rectangle.right() - rectangle.left())*(rectangle.bottom() - rectangle.top())
 
 def recRatio(recA, recB):
-    print "--ratio"
+    #print "--ratio"
     intersection = max(0, min(recA.right(), recB.right()) - max(recA.left(), recB.left())) * max(0, min(recA.bottom(), recB.bottom()) - max(recA.top(), recB.top()));
     intersection = float(intersection)
-    print "--union"
+    #print "--union"
     union = recArea(recA) + recArea(recB) - intersection;
     return (float(intersection)/float(union))
 
@@ -24,11 +24,11 @@ class Tracker():
         self.dlibTracker = dlibTracker
 
     def start(self, image):
-        print "----tstart"
+        #print "----tstart"
         self.dlibTracker.start_track(image, self.rectangle)
 
     def update(self, image):
-        print "----tupd"
+        #print "----tupd"
         res = self.dlibTracker.update(image)
         self.rectangle = self.dlibTracker.get_position()
         return res
@@ -48,7 +48,7 @@ class Tracking():
         self.trackedRectangles = []
         
         self.threshold = 0.20
-        self.trackerThreshold = 4.99
+        self.trackerThreshold = 4.9
 
     def reset(self):
         self.lastFrameRectangles = []
@@ -60,34 +60,39 @@ class Tracking():
         self.trackers.remove(tracker)
 
     def getRectangles(self):
+        #print "TRGET", len(self.trackedRectangles)
         return self.trackedRectangles
 
 
     def updateTrackers(self, rectangles, image):
-        print "--upda", len(rectangles)
+        #print "--upda", len(rectangles)
         self.lastImage = image
         self.lastFrameRectangles = rectangles
-        print "chk", len(self.lastFrameRectangles)
+        #print "chk", len(self.lastFrameRectangles)
         self.trackedRectangles = []
         for tr in self.trackers:
             score = tr.update(image)
-            print "!!!!!!!!!! TRSC:", score
+            print "TRSC:", score
             if score >= self.trackerThreshold:
+                #print "TRADD"
                 self.trackedRectangles.append(tr.rectangle)
             else:
                 self.remove(tr)
             
 
     def feed(self, rectangles, image):
-        print "--fi"
+        #print "--fi"
         # first image
         if self.lastImage is None:
             self.lastImage = image
             self.lastFrameRectangles = rectangles
-            print "-- LFR SET TO ", len(self.lastFrameRectangles)
+            #print "-- LFR SET TO ", len(self.lastFrameRectangles)
             return
 
-        print "--rec", len(self.lastFrameRectangles)
+        #if len(rectangles)==0 and len(self.trackers)==0:
+        #    return
+
+        #print "--rec", len(self.lastFrameRectangles)
         # search whether box is already tracked
         for rec in rectangles:
             for tr in self.trackers:
@@ -97,8 +102,8 @@ class Tracking():
                     #self.updateTrackers(rectangles, image)
                     #return
 
-        print "--lost"
-        print len(self.lastFrameRectangles), len(rectangles)
+        #print "--lost"
+        #print len(self.lastFrameRectangles), len(rectangles)
         # not tracked yet, compare last two frames for lost boxes
         lost = []
         for recA in self.lastFrameRectangles:
@@ -111,8 +116,8 @@ class Tracking():
                 # box was lost between last two frames, assign for tracking
                 lost.append(recA)
 
-        print len(lost)
-        print "--tra"
+        #print len(lost)
+        #print "--tra"
         # begin tracking all lost boxes
         for rec in lost:
             tr = Tracker(rec, self.dlibTrackerCreator())

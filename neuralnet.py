@@ -13,12 +13,17 @@ from sklearn.mixture import GMM
 import openface
 import time
 
+import opencv_detector
+
+LOGNAME = "log_"+str(long(time.time()))+".txt"
+
 
 DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
 NN_MODEL = "models/openface/nn4.small2.v1.t7"
-TRACKING_ENABLED = True
 IMG_DIM = 96
-SCALE_DOWN = True # !! todo dynamic scaling
+TRACKING_ENABLED = False
+SCALE_DOWN = True
+SCALE_FACTOR = 0.3
 
 CUDA = False
 
@@ -26,16 +31,42 @@ start = time.time()
 
 
 
+class FRStat():
+    def __init__(self):
+        self.data = [0.0, 0.0, 0.0, 0.0, 0.0]
+        self.idata = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+    def rnd(self, x):
+        y = x*1000
+        return int(y)
+
+    def rndmap(self):
+        self.idata = map(lambda x: self.rnd(x), self.data)
+
+    def write(self):
+        self.rndmap()
+        f = open(LOGNAME, "a")
+        f.write(str(self.idata[0])+"#"+str(self.idata[1])+"#"+str(self.idata[2])+"#"+str(self.idata[3])+"#"+str(self.idata[4])+"\n")
+        f.close()
+        self.data = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+
+FRS = FRStat()
+
 fileDir = os.path.dirname(os.path.realpath(__file__))
 modelDir = os.path.join(fileDir, '..', 'models')
 dlibModelDir = os.path.join(modelDir, 'dlib')
 openfaceModelDir = os.path.join(modelDir, 'openface')
 
 
-DEF_ALIGN = openface.AlignDlib(DLIB_MODEL)
+DEF_ALIGN = openface.AlignDlib(DLIB_MODEL) 
+DEF_DETECTOR = DEF_ALIGN
+#DEF_DETECTOR = opencv_detector
 DEF_NET = openface.TorchNeuralNet(NN_MODEL, imgDim=IMG_DIM, cuda=CUDA)
-TRACKER = tracking.Tracking(dlib.correlation_tracker)
-
+if TRACKING_ENABLED:
+    TRACKER = tracking.Tracking(dlib.correlation_tracker)
+else:
+    TRACKER = None
 
 
 def scaleRect(rect, factor):
@@ -64,7 +95,7 @@ def scaleRects(rects, factor):
     return res
 
 
-def getRep(bgrImg, align, net, tracker, skipDetection):
+def getRep(bgrImg, detector, align, net, tracker, skipDetection):
     start = time.time()
     if bgrImg is None:
         raise Exception("Unable to load image/frame")
@@ -72,37 +103,40 @@ def getRep(bgrImg, align, net, tracker, skipDetection):
     rgbImg = cv2.cvtColor(bgrImg, cv2.COLOR_BGR2RGB)
     #rgbImg = cv2.resize(rgbImg, None, fx=0.5, fy=0.5)
 
-    print("  + Original size: {}".format(rgbImg.shape))
-    print("Loading the image took {} seconds.".format(time.time() - start))
-
-    start = time.time()
+    #print("  + Original size: {}".format(rgbImg.shape))
+    FRS.data[0] += time.time()-start
+    #print("Loading the image took {} seconds.".format(FRS.data[0]))
 
     # Get all bounding boxes
     # optimizer
 
     if SCALE_DOWN and not skipDetection:
         try:
-            scaleFactor = 0.6
+            start = time.time()
+            scaleFactor = SCALE_FACTOR
             bbImg = cv2.resize(rgbImg, None, fx=scaleFactor, fy=scaleFactor) 
-            bb = align.getAllFaceBoundingBoxes(bbImg)
+            bb = detector.getAllFaceBoundingBoxes(bbImg)
             bb = scaleRects(bb, 1.0/scaleFactor)
-            print "BBLEN", len(bb)
+            FRS.data[1] = time.time() - start
+            #print "BBLEN", len(bb)
         except Exception as ex:
             print ex
     elif not skipDetection:
-        bb = align.getAllFaceBoundingBoxes(rgbImg)
+        start = time.time()
+        bb = detector.getAllFaceBoundingBoxes(rgbImg)
+        FRS.data[1] = time.time() - start
 
     	if bb is None:
             bb = dlib.rectangles()
     else:
         bb = dlib.rectangles()
     
-    print("bb", bb)
-    print("Face detection took {} seconds.".format(time.time() - start))
+    #print("bb", bb)
     start = time.time()
 
     try:
         if not (tracker is None):
+            start = time.time()
             tracker.feed(bb, rgbImg)
             trrec = tracker.getRectangles()
             newbb = dlib.rectangles()
@@ -111,6 +145,8 @@ def getRep(bgrImg, align, net, tracker, skipDetection):
             for r in trrec:
                 dlr = dlib.rectangle(long(r.left()), long(r.top()), long(r.right()), long(r.bottom()))
                 newbb.append(dlr)
+            bb = newbb
+            FRS.data[4] = time.time()-start
     except KeyboardInterrupt as err:
         return None
 
@@ -118,6 +154,7 @@ def getRep(bgrImg, align, net, tracker, skipDetection):
 
     alignedFaces = []
     for box in bb:
+        #print "BOX", box.left(), box.top(), box.right(), box.bottom()
         alignedFaces.append(
             align.align(
                 IMG_DIM,
@@ -128,7 +165,7 @@ def getRep(bgrImg, align, net, tracker, skipDetection):
     if alignedFaces is None:
         raise Exception("Unable to align the frame")
 
-    print("Alignment took {} seconds.".format(time.time() - start))
+    FRS.data[2] = time.time()-start #align
 
     start = time.time()
 
@@ -136,7 +173,7 @@ def getRep(bgrImg, align, net, tracker, skipDetection):
     for alignedFace in alignedFaces:
         reps.append(net.forward(alignedFace))
 
-    print("Neural network forward pass took {} seconds.".format(time.time() - start))
+    FRS.data[3] = time.time()-start # NN
 
     # print (reps)
     arrayBoxes = bbToArray(bb)
@@ -150,13 +187,14 @@ def getRepFromString(imgstring, skipDetection):
 	arr = np.fromstring(imgstring, np.uint8)
 	img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
-	print "imload took:", time.time()-st
+	FRS.data[0] = time.time()-st #imload
 
 	
 	
-	vectors = getRep(img, DEF_ALIGN, DEF_NET, TRACKER, skipDetection)
+	vectors = getRep(img, DEF_DETECTOR, DEF_ALIGN, DEF_NET, TRACKER, skipDetection)
 
-	print "grfs took:", time.time()-st
+        FRS.write()
+	#print "grfs took:", time.time()-st
 	return vectors
 
 
