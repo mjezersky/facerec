@@ -23,6 +23,9 @@ class Tracker():
         self.rectangle = rectangle
         self.dlibTracker = dlibTracker
 
+        self.gainThreshold = 5 # max gain until considered stuck
+        self.lowestScore = 100 # default big value
+
     def start(self, image):
         #print "----tstart"
         self.dlibTracker.start_track(image, self.rectangle)
@@ -31,6 +34,17 @@ class Tracker():
         #print "----tupd"
         res = self.dlibTracker.update(image)
         self.rectangle = self.dlibTracker.get_position()
+
+        gain = res-self.lowestScore
+
+        # considered stuck, return score 0
+        if gain > self.gainThreshold:
+            print "tracker stuck", self.lowestScore, res
+            return 0
+
+        if res < self.lowestScore:
+            self.lowestScore = res
+
         return res
 
     def __eq__(self, tr):

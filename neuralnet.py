@@ -19,11 +19,14 @@ LOGNAME = "log_"+str(long(time.time()))+".txt"
 
 
 DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
+#DLIB_MODEL = "models/dlib/shape_predictor_5_face_landmarks.dat"
 NN_MODEL = "models/openface/nn4.small2.v1.t7"
 IMG_DIM = 96
 TRACKING_ENABLED = False
 SCALE_DOWN = True
-SCALE_FACTOR = 0.3
+SCALE_FACTOR = 0.6
+DETECTOR_GRAYSCALE = True
+
 
 CUDA = False
 
@@ -114,7 +117,9 @@ def getRep(bgrImg, detector, align, net, tracker, skipDetection):
         try:
             start = time.time()
             scaleFactor = SCALE_FACTOR
-            bbImg = cv2.resize(rgbImg, None, fx=scaleFactor, fy=scaleFactor) 
+            bbImg = cv2.resize(rgbImg, None, fx=scaleFactor, fy=scaleFactor)
+            if DETECTOR_GRAYSCALE:
+                bbImg = cv2.cvtColor(bbImg, cv2.COLOR_RGB2GRAY) 
             bb = detector.getAllFaceBoundingBoxes(bbImg)
             bb = scaleRects(bb, 1.0/scaleFactor)
             FRS.data[1] = time.time() - start
@@ -123,7 +128,11 @@ def getRep(bgrImg, detector, align, net, tracker, skipDetection):
             print ex
     elif not skipDetection:
         start = time.time()
-        bb = detector.getAllFaceBoundingBoxes(rgbImg)
+        if DETECTOR_GRAYSCALE:
+            bbImg = cv2.cvtColor(rgbImg, cv2.COLOR_RGB2GRAY)
+        else:
+            bbImg = rgbImg
+        bb = detector.getAllFaceBoundingBoxes(bbImg)
         FRS.data[1] = time.time() - start
 
     	if bb is None:
