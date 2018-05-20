@@ -1,5 +1,3 @@
-
-
 def recArea(rectangle):
     return (rectangle.right() - rectangle.left())*(rectangle.bottom() - rectangle.top())
 
@@ -62,7 +60,7 @@ class Tracking():
         self.trackedRectangles = []
         
         self.threshold = 0.20
-        self.trackerThreshold = 4.9
+        self.trackerThreshold = 4.8
 
     def reset(self):
         self.lastFrameRectangles = []

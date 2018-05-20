@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-
+import time
 
 class FaceDB():
     def __init__(self):
@@ -44,10 +44,19 @@ class FaceDB():
     def getName(self, index):
         return self.labels[index]
 
+    # for OpenFace model
     def distToConf(self, dist):
         if dist>1.2:
             return 0
         return 1.0 - (dist/1.2)
+
+
+    # for ResNet model
+    def dlibDistToConf(self, dist):
+        conf = 1-((dist-0.4)/0.4)
+        if conf<0: return 0.0
+        if conf>1: return 1.0
+        return conf
 
     def calcBestMatch(self, name, vector):
         best = 100
@@ -57,6 +66,19 @@ class FaceDB():
             if dist < best:
                 best = dist
         return best
+
+
+    #non SVM prediction
+    def getPred(self, vector):
+        print "predicting"
+        s=time.time()
+        dists = map(lambda x: np.linalg.norm(vector-x), self.vectors)
+        minind = np.argmin(dists)
+        print "min is", minind, ":", self.labels[minind], dists[minind], "took", time.time()-s
+        
+        # confidence for 0.0 to 0.4 is 1.0, lowers from 0.4 to 0.8 and past 0.8 is zero
+        conf = self.dlibDistToConf(dists[minind])
+        return self.labels[minind], conf
                 
     def getConfidence(self, name, vector):
         return self.distToConf(self.calcBestMatch(name, vector))
