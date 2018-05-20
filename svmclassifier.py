@@ -1,3 +1,6 @@
+# File: 	svmclassifier.py
+# Author: 	Matous Jezersky
+
 from sklearn.svm import SVC
 from sklearn.grid_search import GridSearchCV
 import numpy as np
@@ -16,7 +19,6 @@ def trainNewModel(features):
              'kernel': ['rbf']}
         ]
     clf = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=2)
-    #clf = SVC(probability=True)
     try:
         clf.fit(X,y)
         return clf

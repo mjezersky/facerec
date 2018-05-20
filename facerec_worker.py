@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# File:		facerec_worker.py
+# Author:	Matous Jezersky
+
 import facedb
 import svmclassifier as svm
 import recognizer
@@ -9,15 +12,17 @@ import pika
 import threading
 
 
-
+# serialize an array into a string, with # as element separator
 def serializeArray(arr):
     return "#".join( map(lambda x: str(x), arr) )
 
 class MQServer():
+    # initialize the server and all variable to their default values
+    # do not edit these defaults, you can change them in facerec.py file
     def __init__(self):
 	self.WORKER_GROUP_NAME = "default"
         self.IDENTIFIER = "Worker A"
-        self.MQ_SERVER_IP = "192.168.1.3"
+        self.MQ_SERVER_IP = "192.168.0.2"
         self.MQ_SERVER_PORT = 5672
         self.MQ_USERNAME = "facerec"
         self.MQ_PASSWORD = "facerec"
@@ -46,13 +51,21 @@ class MQServer():
         self.detectorStep = self.DETECTOR_STEP
 
 
+    # start the server
     def run(self):
         print "Worker started - ID: \""+self.IDENTIFIER+"\" Group: \""+self.WORKER_GROUP_NAME+"\""
-        self.broadcastInit()
-        self.mainServiceInit()
+        print "Connecting..."
+        try:
+            self.broadcastInit()
+            print "Connected"
+            self.mainServiceInit()
+        except Exception as err:
+            print err
+            print "Connection error. Reconnecting in 3s, press CTRL+C to cancel."
+            time.sleep(3)
 
 
-
+    # get a predicted name,confidence tuple from a feature vector 
     def recog(self, vec):
         if vec is None:
             return "NO_FACE_DETECTED"
@@ -72,11 +85,13 @@ class MQServer():
         return pred + "," + str(confidence) + "," + serializeArray(vec)
 
 
+    # retrain SVM classifier
     def retrain(self):
         self.smodel = svm.trainNewModel(self.vectors)
         #dbh.saveVectors(vectors, "filedb.p")
 
 
+    # split frame data into frame number and image data
     def splitFrame(self, framestr):
         separatorIndex = -1
         maxlen = 20
@@ -93,6 +108,8 @@ class MQServer():
 
         return (framestr[0:separatorIndex], framestr[separatorIndex+1:])
 
+    # process an image defined by bytes in imgstring, returns a list of tuples
+    # where one tuple is feature_vector,bounding_box
     def getResults(self, imgstring):
         startTime = time.time()
         allvecs = []
@@ -120,6 +137,7 @@ class MQServer():
         
         return results
 
+    # deserialize and load face DB
     def deserializeDB(self, string):
         self.fdb.deserialize(string)
         self.fdb.store(self.FACE_DB_FILE)
@@ -127,6 +145,7 @@ class MQServer():
         if self.SVM_MODE:
             self.retrain()
 
+    # callback for image processing
     def mainServiceCallback(self, ch, method, properties, body):
         frameNum, data = self.splitFrame(body)
         self.currFrame = int(frameNum)
@@ -143,6 +162,7 @@ class MQServer():
                               routing_key='feedback-'+self.WORKER_GROUP_NAME,
                               body=msg)
 
+    # callback for broadcast processing (discover and serialized DB)
     def broadcastCallback(self, ch, method, properties, body):
        if len(body)<=1:
            return
@@ -155,6 +175,7 @@ class MQServer():
            self.deserializeDB(body[1:])
 
 
+    # init for image processing
     def mainServiceInit(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.MQ_SERVER_IP, port=self.MQ_SERVER_PORT, credentials=self.MQ_CREDENTIALS))
         channel = connection.channel()
@@ -168,6 +189,7 @@ class MQServer():
 
         channel.start_consuming()
 
+    # init for broadcast processing (discover and serialized DB)
     def broadcastInit(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.MQ_SERVER_IP, port=self.MQ_SERVER_PORT, credentials=self.MQ_CREDENTIALS))
         channel = connection.channel()
@@ -187,6 +209,7 @@ class MQServer():
         mq_recieve_thread.daemon = True
         mq_recieve_thread.start()
 
+# main function to start the server, server must be MQServer instance
 def runserver(server):
     while 1:
         try:

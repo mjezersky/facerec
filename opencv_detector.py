@@ -1,6 +1,13 @@
+# File: 	opencv_detector.py
+# Author: 	Matous Jezersky
+
+# Adapter for opencv detector, instead of dlib
+
+
 import numpy as np
 import cv2
 import dlib
+
 
 face_cascade = cv2.CascadeClassifier("models/haarcascade.xml")
 
