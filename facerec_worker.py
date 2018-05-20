@@ -39,7 +39,6 @@ class MQServer():
             self.vectors = self.fdb.getVectors()
         except:
             self.vectors = []
-        print(self.fdb.labels)
         if self.SVM_MODE:
             self.smodel = svm.trainNewModel(self.vectors)
         else:
@@ -48,6 +47,7 @@ class MQServer():
 
 
     def run(self):
+        print "Worker started - ID: \""+self.IDENTIFIER+"\" Group: \""+self.WORKER_GROUP_NAME+"\""
         self.broadcastInit()
         self.mainServiceInit()
 
@@ -105,7 +105,6 @@ class MQServer():
             # continuity broken, reset counter
             self.skipCounter = 0
         self.prevFrameNum = currFrameNum
-        print "SK", self.skipCounter, (self.skipCounter>=1 and self.skipCounter%self.detectorStep!=0)
         if self.skipCounter>=1 and self.skipCounter%self.detectorStep!=0:
             skipDetection = True
         else:
@@ -113,8 +112,6 @@ class MQServer():
         self.skipCounter += 1
         allvecs, boxes = recognizer.getRepFromString(imgstring, self.SCALE_FACTOR, skipDetection)
         endTime = time.time()
-        print "allvecs, boxes", len(allvecs), len(boxes)
-        print "Total facerec time:", endTime-startTime
 
         results = []
         for i in range(0, len(boxes)):
@@ -124,7 +121,6 @@ class MQServer():
         return results
 
     def deserializeDB(self, string):
-        print "DB deserialize"
         self.fdb.deserialize(string)
         self.fdb.store(self.FACE_DB_FILE)
         self.vectors = self.fdb.getVectors()
@@ -132,26 +128,22 @@ class MQServer():
             self.retrain()
 
     def mainServiceCallback(self, ch, method, properties, body):
-        print "got", len(body), "bytes"
         frameNum, data = self.splitFrame(body)
         self.currFrame = int(frameNum)
         results = self.getResults(data)
         if len(results)==0:
             results = [ "none,none,0,none" ]
-        print frameNum
+
         if frameNum == "-1":
             responseType = "2" #DB recognition request
-            print "DB frame request"
         else:
             responseType = "1"
         msg = responseType + ";" + self.IDENTIFIER + ";" + str(self.currFrame) + ";" + ";".join(results)
-        print "Publishing", len(msg), "bytes"
         ch.basic_publish(exchange='',
                               routing_key='feedback-'+self.WORKER_GROUP_NAME,
                               body=msg)
 
     def broadcastCallback(self, ch, method, properties, body):
-       #print "got", len(body), "bytes"
        if len(body)<=1:
            return
        if body[0]=="0":

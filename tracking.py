@@ -37,7 +37,6 @@ class Tracker():
 
         # considered stuck, return score 0
         if gain > self.gainThreshold:
-            print "tracker stuck", self.lowestScore, res
             return 0
 
         if res < self.lowestScore:
@@ -84,7 +83,6 @@ class Tracking():
         self.trackedRectangles = []
         for tr in self.trackers:
             score = tr.update(image)
-            print "TRSC:", score
             if score >= self.trackerThreshold:
                 #print "TRADD"
                 self.trackedRectangles.append(tr.rectangle)

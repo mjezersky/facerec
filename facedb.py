@@ -70,12 +70,10 @@ class FaceDB():
 
     #non SVM prediction
     def getPred(self, vector):
-        print "predicting"
         s=time.time()
         dists = map(lambda x: np.linalg.norm(vector-x), self.vectors)
         minind = np.argmin(dists)
-        print "min is", minind, ":", self.labels[minind], dists[minind], "took", time.time()-s
-        
+
         # confidence for 0.0 to 0.4 is 1.0, lowers from 0.4 to 0.8 and past 0.8 is zero
         conf = self.dlibDistToConf(dists[minind])
         return self.labels[minind], conf
