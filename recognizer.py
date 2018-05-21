@@ -18,7 +18,6 @@ import opencv_detector
 
 
 DLIB_MODEL = "models/dlib/shape_predictor_68_face_landmarks.dat"
-#DLIB_MODEL = "models/dlib/shape_predictor_5_face_landmarks.dat"
 NN_MODEL = "models/openface/nn4.small2.v1.t7"
 IMG_DIM = 96
 TRACKING_ENABLED = True
@@ -151,8 +150,6 @@ def getRep(bgrImg, detector, align, net, tracker, scaleFactor, skipDetection):
     arrayBoxes = bbToArray(bb)
     # return tuple of array of feature vectors and array of bounding boxes
     return reps, arrayBoxes
-
-
 
 
 def getRepFromString(imgstring, scaleFactor, skipDetection):

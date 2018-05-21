@@ -22,7 +22,7 @@ class MQServer():
     def __init__(self):
 	self.WORKER_GROUP_NAME = "default"
         self.IDENTIFIER = "Worker A"
-        self.MQ_SERVER_IP = "192.168.0.2"
+        self.MQ_SERVER_IP = "127.0.0.1"
         self.MQ_SERVER_PORT = 5672
         self.MQ_USERNAME = "facerec"
         self.MQ_PASSWORD = "facerec"
@@ -215,5 +215,5 @@ def runserver(server):
         try:
             server.run()
         except KeyboardInterrupt:
-            print "Closing\n"
+            print "\nClosing\n"
             break

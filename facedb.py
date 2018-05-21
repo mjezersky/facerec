@@ -10,8 +10,8 @@ class FaceDB():
     def __init__(self):
         self.faces = {}
 
-        self.vectors = None
-        self.labels = None
+        self.vectors = []
+        self.labels = []
 
     # store face DB into a file
     def store(self, filename):
@@ -22,9 +22,12 @@ class FaceDB():
 
     # load face DB from a file
     def load(self, filename):
-        f = open(filename, "rb")
-        data = pickle.load(f)
-        f.close()
+        try:
+            f = open(filename, "rb")
+            data = pickle.load(f)
+            f.close()
+        except:
+            return
         self.faces = data[0]
         self.vectors = data[1]
         self.labels = data[2]
@@ -78,6 +81,8 @@ class FaceDB():
 
     # non SVM prediction
     def getPred(self, vector):
+        if len(self.vectors) == 0:
+            return "unknown",0
         s=time.time()
         dists = map(lambda x: np.linalg.norm(vector-x), self.vectors)
         minind = np.argmin(dists)

@@ -1,5 +1,9 @@
+
+all:
+	chmod +x facerec.py
+
 update:
 	git pull
 
 run:
-	python main.py
+	./facerec.py
