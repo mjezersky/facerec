@@ -10,7 +10,7 @@ s.WORKER_GROUP_NAME = "default"
 s.IDENTIFIER = "Worker A"
 
 # RabbitMQ server information
-s.MQ_SERVER_IP = "192.168.0.130"
+s.MQ_SERVER_IP = "127.0.0.1"
 s.MQ_SERVER_PORT = 5672
 s.MQ_USERNAME = "facerec"
 s.MQ_PASSWORD = "facerecc"
